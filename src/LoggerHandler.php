@@ -36,23 +36,28 @@ class LoggerHandler extends AbstractProcessingHandler
      *
      * @return LoggerMessage
      */
-    protected function getMessage(array $record)
+    protected function getMessage(array $record): LoggerMessage
     {
         if ($this->style == 'card') {
-            // Include context as facts to send to microsoft teams
-            // Added Sent Date Info
-
             $facts = [];
-            foreach($record['context'] as $name => $value){
+            $exceptions = [];
+            foreach($record['context'] as $name => $value) {
+                if ($value instanceof \Exception) {
+                    $exceptions[$name] = $value;
+                    continue;
+                }
+
+                if (is_array($value) || is_object($value)) $value = "`".json_encode($value)."`";
+
                 $facts[] = ['name' => $name, 'value' => $value];
             }
 
             $facts = array_merge($facts, [[
-                'name'  => 'Sent Date',
+                'name'  => 'Timestamp',
                 'value' => date('D, M d Y H:i:s e'),
             ]]);
 
-            return $this->useCardStyling($record['level_name'], $record['message'], $facts);
+            return $this->useCardStyling($record['level_name'], $record['message'], $facts, $exceptions);
         } else {
             return $this->useSimpleStyling($record['level_name'], $record['message']);
         }
@@ -61,18 +66,18 @@ class LoggerHandler extends AbstractProcessingHandler
     /**
      * Styling message as simple message
      *
-     * @param String $name
-     * @param String $message
+     * @param string $name
+     * @param string $message
      * @param array  $facts
      */
-    public function useCardStyling($name, $message, $facts)
+    private function useCardStyling($name, $message, $facts, $exceptions): LoggerMessage
     {
         $loggerColour = new LoggerColour($name);
 
-        $loggerMessage = new LoggerMessage([
+        return new LoggerMessage([
             'summary'    => $name . ($this->name ? ': ' . $this->name : ''),
             'themeColor' => (string) $loggerColour,
-            'sections'   => [
+            'sections'   => array_merge([
                 array_merge(config('teams.show_avatars', true) ? [
                     'activityTitle'    => $this->name,
                     'activitySubtitle' => $message,
@@ -85,19 +90,32 @@ class LoggerHandler extends AbstractProcessingHandler
                     'facts'            => $facts,
                     'markdown'         => true
                 ], config('teams.show_type', true) ? ['activitySubtitle' => '<span style="color:#' . (string) $loggerColour . '">' . $message . '</span>',] : [])
-            ]
+            ], array_values(array_map(function ($key, \Exception $ex) {
+                return [
+                    'activityTitle' => $key,
+                    'activitySubtitle' => $ex->getMessage(),
+                    // replacing single newlines with doubles because text is formatted as markdown and double-newlines
+                    // force a line-break in markdown.
+                    'activityText' => implode("\n\n", explode("\n", $ex->getTraceAsString())),
+                    'facts' => [
+                        ['name' => 'Code', 'value' => $ex->getCode()],
+                        ['name' => 'File', 'value' => $ex->getFile()],
+                        ['name' => 'Line', 'value' => $ex->getLine()],
+                    ],
+                    'startGroup' => true,
+                    'markdown' => true
+                ];
+            }, array_keys($exceptions), $exceptions)))
         ]);
-
-        return $loggerMessage->jsonSerialize();
     }
 
     /**
      * Styling message as simple message
      *
-     * @param String $name
-     * @param String $message
+     * @param string $name
+     * @param string $message
      */
-    public function useSimpleStyling($name, $message)
+    private function useSimpleStyling($name, $message): LoggerMessage
     {
         $loggerColour = new LoggerColour($name);
 

@@ -8,13 +8,6 @@ use Illuminate\Support\ServiceProvider;
 class LoggerServiceProvider extends ServiceProvider
 {
     /**
-     * The Laravel application instance.
-     *
-     * @var \Illuminate\Foundation\Application
-     */
-    protected $app;
-
-    /**
      * Normalized Laravel Version
      *
      * @var string
