@@ -1,6 +1,6 @@
 <?php
 
-namespace MargaTampu\LaravelTeamsLogging;
+namespace RianFuro\LaravelTeamsLogging;
 
 class LoggerAvatar
 {

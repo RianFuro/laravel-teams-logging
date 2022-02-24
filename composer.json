@@ -1,6 +1,6 @@
 {
-	"name": "margatampu/laravel-teams-logging",
-	"description": "Laravel handler to sending messages to Microsoft Teams using the Incoming Webhook connector",
+	"name": "rianfuro/laravel-teams-logging",
+	"description": "Laravel handler for sending messages to Microsoft Teams using the Incoming Webhook connector",
 	"license": "MIT",
 	"authors": [
 		{
@@ -22,12 +22,12 @@
 	},
 	"autoload": {
 		"psr-4": {
-			"MargaTampu\\LaravelTeamsLogging\\": "src/"
+			"RianFuro\\LaravelTeamsLogging\\": "src/"
 		}
 	},
 	"extra": {
 		"laravel": {
-			"providers": [ "MargaTampu\\LaravelTeamsLogging\\LoggerServiceProvider" ]
+			"providers": [ "RianFuro\\LaravelTeamsLogging\\LoggerServiceProvider" ]
 		}
 	}
 }
