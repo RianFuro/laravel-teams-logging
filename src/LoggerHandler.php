@@ -39,9 +39,21 @@ class LoggerHandler extends AbstractProcessingHandler
     protected function getMessage(array $record): LoggerMessage
     {
         if ($this->style == 'card') {
-            $facts = [];
-            $exceptions = [];
-            foreach($record['context'] as $name => $value) {
+            extract($this->gatherFacts($record));
+
+            return $this->useCardStyling($record['level_name'], $record['message'], $facts, $exceptions);
+        } else {
+            return $this->useSimpleStyling($record['level_name'], $record['message']);
+        }
+    }
+
+    private function gatherFacts($record): array
+    {
+        $facts = [];
+        $exceptions = [];
+
+        $extractFacts = function ($dict) use (&$facts, &$exceptions) {
+            foreach($dict as $name => $value) {
                 if ($value instanceof \Exception) {
                     $exceptions[$name] = $value;
                     continue;
@@ -56,11 +68,11 @@ class LoggerHandler extends AbstractProcessingHandler
                 'name'  => 'Timestamp',
                 'value' => date('D, M d Y H:i:s e'),
             ]]);
+        };
+        $extractFacts($record['context'] ?? []);
+        $extractFacts($record['extra'] ?? []);
 
-            return $this->useCardStyling($record['level_name'], $record['message'], $facts, $exceptions);
-        } else {
-            return $this->useSimpleStyling($record['level_name'], $record['message']);
-        }
+        return compact('facts', 'exceptions');
     }
 
     /**
